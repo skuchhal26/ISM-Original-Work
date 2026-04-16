@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cybersecurity Attack Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            color: #00ff00;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid #00ff00;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            text-shadow: 0 0 10px #00ff00;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 5px #00ff00; }
+            to { text-shadow: 0 0 20px #00ff00, 0 0 30px #00ff00; }
+        }
+
+        .subtitle {
+            color: #00cc00;
+            margin-top: 10px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+
+        .panel h2 {
+            color: #00ffff;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #00ff00;
+        }
+
+        .attack-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #003300 0%, #006600 100%);
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            padding: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #006600 0%, #009900 100%);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #330000 0%, #660000 100%);
+            color: #ff0000;
+            border-color: #ff0000;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #660000 0%, #990000 100%);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+        }
+
+        .btn-full {
+            grid-column: 1 / -1;
+        }
+
+        .simulation-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 968px) {
+            .simulation-area {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        #simulationOutput {
+            background: #000;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            padding: 15px;
+            min-height: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        #visualArea {
+            background: #000;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            padding: 20px;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .log-line {
+            margin: 5px 0;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .scenario { color: #ffff00; font-weight: bold; }
+        .attacker { color: #ff0000; }
+        .victim { color: #ff9900; }
+        .server { color: #00ccff; }
+        .compromised { color: #ff0000; font-weight: bold; }
+        .defense { color: #00ff00; font-weight: bold; }
+        .title { color: #00ffff; font-size: 1.2em; font-weight: bold; text-align: center; }
+
+        .node {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 35px;
+        }
+
+        .attacker-node {
+            background: radial-gradient(circle, #ff0000, #660000);
+            border: 3px solid #ff0000;
+            box-shadow: 0 0 20px #ff0000;
+        }
+
+        .victim-node {
+            background: radial-gradient(circle, #0099ff, #003366);
+            border: 3px solid #0099ff;
+            box-shadow: 0 0 20px #0099ff;
+        }
+
+        .server-node {
+            background: radial-gradient(circle, #00ff00, #006600);
+            border: 3px solid #00ff00;
+            box-shadow: 0 0 20px #00ff00;
+        }
+
+        .data-packet {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: #ffff00;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ffff00;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+        }
+
+        #chatOutput {
+            background: #000;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            padding: 15px;
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .chat-message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .user-message {
+            background: rgba(0, 100, 0, 0.3);
+            border-left: 3px solid #00ff00;
+        }
+
+        .bot-message {
+            background: rgba(0, 100, 100, 0.3);
+            border-left: 3px solid #00ffff;
+        }
+
+        .error-message {
+            background: rgba(100, 0, 0, 0.3);
+            border-left: 3px solid #ff0000;
+            color: #ff6666;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        #chatInput {
+            flex-grow: 1;
+            background: #000;
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .api-setup {
+            background: rgba(100, 100, 0, 0.2);
+            border: 2px solid #ffff00;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .api-setup input {
+            width: 100%;
+            background: #000;
+            color: #ffff00;
+            border: 1px solid #ffff00;
+            border-radius: 3px;
+            padding: 8px;
+            font-family: 'Courier New', monospace;
+            margin-top: 5px;
+        }
+
+        .suggestion-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .chip {
+            background: rgba(0, 50, 50, 0.5);
+            color: #00ffff;
+            border: 1px solid #00ffff;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .chip:hover {
+            background: rgba(0, 100, 100, 0.5);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #000;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #00ff00;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔒 CYBERSECURITY ATTACK SIMULATOR 🔒</h1>
+            <p class="subtitle">Educational Platform for Learning Security Concepts</p>
+        </header>
+
+        <div class="main-content">
+            <div class="panel">
+                <h2>⚡ Attack Simulations</h2>
+                <div class="attack-grid">
+                    <button class="btn" onclick="runAttack('sql')">💉 SQL Injection</button>
+                    <button class="btn" onclick="runAttack('phishing')">🎣 Phishing</button>
+                    <button class="btn" onclick="runAttack('bruteforce')">🔨 Brute Force</button>
+                    <button class="btn" onclick="runAttack('mitm')">👤 MITM</button>
+                    <button class="btn" onclick="runAttack('ddos')">💥 DDoS</button>
+                    <button class="btn" onclick="runAttack('ransomware')">🔒 Ransomware</button>
+                    <button class="btn" onclick="runAttack('xss')">📝 XSS</button>
+                    <button class="btn" onclick="runAttack('csrf')">🔗 CSRF</button>
+                    <button class="btn" onclick="runAttack('keylogger')">⌨️ Keylogger</button>
+                    <button class="btn" onclick="runAttack('arp')">🌐 ARP Spoof</button>
+                    <button class="btn btn-full" onclick="runAttack('all')">🚀 Run All Scenarios</button>
+                    <button class="btn btn-danger btn-full" onclick="clearAll()">Clear</button>
+                </div>
+                
+                <div class="simulation-area">
+                    <div id="simulationOutput"></div>
+                    <div id="visualArea"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>💬 AI Security Assistant</h2>
+                
+                <div class="api-setup">
+                    <label for="apiKey">🔑 Gemini API Key:</label>
+                    <input type="password" id="apiKey" placeholder="Enter API key">
+                    <p style="font-size: 10px; color: #888; margin-top: 5px;">Get free at: ai.google.dev</p>
+                </div>
+
+                <div class="suggestion-chips">
+                    <div class="chip" onclick="askBot('How does SQL injection work?')">SQL Injection?</div>
+                    <div class="chip" onclick="askBot('What makes passwords strong?')">Strong Passwords?</div>
+                    <div class="chip" onclick="askBot('How to detect phishing?')">Detect Phishing?</div>
+                    <div class="chip" onclick="askBot('What is ransomware?')">Ransomware?</div>
+                </div>
+
+                <div class="chat-container">
+                    <div id="chatOutput"></div>
+                    <div class="input-group">
+                        <input type="text" id="chatInput" placeholder="Ask a question..." onkeydown="if(event.key==='Enter')sendMsg()">
+                        <button class="btn" onclick="sendMsg()">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var attacks = {
+            sql: {
+                title: "SQL INJECTION ATTACK",
+                steps: [
+                    { type: 'scenario', text: '[SCENARIO] Weak login system found' },
+                    { type: 'scenario', text: 'Target: techcorp-portal.com' },
+                    { type: 'attacker', text: "[ATTACKER] Testing login form" },
+                    { type: 'attacker', text: "Username: admin" },
+                    { type: 'attacker', text: "Password: ' OR '1'='1' --" },
+                    { type: 'server', text: "[SERVER] Query: SELECT * FROM users WHERE..." },
+                    { type: 'compromised', text: "[COMPROMISED] Logged in as admin!" },
+                    { type: 'defense', text: "[DEFENSE] Prevention:" },
+                    { type: 'defense', text: " - Use prepared statements" },
+                    { type: 'defense', text: " - Validate all inputs" }
+                ]
+            },
+            phishing: {
+                title: "PHISHING ATTACK",
+                steps: [
+                    { type: 'scenario', text: '[SCENARIO] Fake email attack' },
+                    { type: 'attacker', text: "[ATTACKER] Sends fake email" },
+                    { type: 'attacker', text: "From: security@paypa1.com" },
+                    { type: 'victim', text: "[VICTIM] alex.chen@email.com clicks" },
+                    { type: 'compromised', text: "[COMPROMISED] Credentials stolen!" },
+                    { type: 'defense', text: "[DEFENSE] Prevention:" },
+                    { type: 'defense', text: " - Check sender carefully" },
+                    { type: 'defense', text: " - Enable MFA" }
+                ]
+            },
+            bruteforce: {
+                title: "BRUTE FORCE ATTACK",
+                steps: [
+                    { type: 'scenario', text: '[SCENARIO] Password guessing' },
+                    { type: 'attacker', text: "[ATTACKER] Trying passwords..." },
+                    { type: 'attacker', text: "Attempt 1: 123456 - FAIL" },
+                    { type: 'attacker', text: "Attempt 47: Welcome123 - SUCCESS!" },
+                    { type: 'compromised', text: "[COMPROMISED] Account hacked!" },
+                    { type: 'defense', text: "[DEFENSE] Prevention:" },
+                    { type: 'defense', text: " - Strong passwords (12+ chars)" },
+                    { type: 'defense', text: " - Account lockout" }
+                ]
+            },
+            mitm: {
+                title: "MAN-IN-THE-MIDDLE ATTACK",
+                steps: [
+                    { type: 'scenario', text: '[SCENARIO] Public WiFi attack' },
+                    { type: 'attacker', text: "[ATTACKER] Rogue access point" },
+                    { type: 'victim', text: "[VICTIM] mike.rivera connects" },
+                    { type: 'compromised', text: "[COMPROMISED] Traffic intercepted!" },
+                    { type: 'defense', text: "[DEFENSE] Prevention:" },
+                    { type: 'defense', text: " - Use HTTPS always" },
+                    { type: 'defense', text: " - Use VPN" }
+                ]
+            },
+            ddos: {
+                title: "DDoS ATTACK",
+                steps: [
+                    { type: 'scenario', text: '[SCENARIO] Traffic flood' },
+                    { type: 'attacker', text: "[ATTACKER] Botnet of 50,000 devices" },
+                    { type: 'server', text: "[SERVER] Traffic spike: 50k req/sec" },
+                    { type: 'compromised', text: "[COMPROMISED] Server down!" },
+                    { type: 'defense', text: "[DEFENSE] Prevention:" },
+                    { type: 'defense', text: " - Use CDN" },
+                    { type: 'defense', text: " - DDoS protection services" }
+                ]
+            },
+            ransomware: {
+                title: "RANSOMWARE ATTACK",
+                steps: [
+                    { type: 'scenario', text: '[SCENARIO] File encryption' },
+                    { type: 'victim', text: "[VICTIM] Opens infected file" },
+                    { type: 'attacker', text: "[MALWARE] Encrypting 15,000 files..." },
+                    { type: 'compromised', text: "[COMPROMISED] Files locked!" },
+                    { type: 'compromised', text: "Ransom: 5 Bitcoin" },
+                    { type: 'defense', text: "[DEFENSE] Prevention:" },
+                    { type: 'defense', text: " - Regular backups" },
+                    { type: 'defense', text: " - Antivirus software" }
+                ]
+            },
+            xss: {
+                title: "XSS ATTACK",
+                steps: [
+                    { type: 'scenario', text: '[SCENARIO] Script injection' },
+                    { type: 'attacker', text: "[ATTACKER] Posts malicious code" },
+                    { type: 'victim', text: "[VICTIM] Loads infected page" },
+                    { type: 'compromised', text: "[COMPROMISED] Session stolen!" },
+                    { type: 'defense', text: "[DEFENSE] Prevention:" },
+                    { type: 'defense', text: " - Sanitize inputs" },
+                    { type: 'defense', text: " - Use CSP headers" }
+                ]
+            },
+            csrf: {
+                title: "CSRF ATTACK",
+                steps: [
+                    { type: 'scenario', text: '[SCENARIO] Forged request' },
+                    { type: 'attacker', text: "[ATTACKER] Sends malicious link" },
+                    { type: 'victim', text: "[VICTIM] Clicks while logged in" },
+                    { type: 'compromised', text: "[COMPROMISED] $5000 transferred!" },
+                    { type: 'defense', text: "[DEFENSE] Prevention:" },
+                    { type: 'defense', text: " - Use CSRF tokens" },
+                    { type: 'defense', text: " - SameSite cookies" }
+                ]
+            },
+            keylogger: {
+                title: "KEYLOGGER ATTACK",
+                steps: [
+                    { type: 'scenario', text: '[SCENARIO] Keystroke monitoring' },
+                    { type: 'attacker', text: "[ATTACKER] Infected USB" },
+                    { type: 'victim', text: "[VICTIM] Types password" },
+                    { type: 'compromised', text: "[COMPROMISED] All keys logged!" },
+                    { type: 'defense', text: "[DEFENSE] Prevention:" },
+                    { type: 'defense', text: " - Anti-malware" },
+                    { type: 'defense', text: " - Disable USB autorun" }
+                ]
+            },
+            arp: {
+                title: "ARP SPOOFING",
+                steps: [
+                    { type: 'scenario', text: '[SCENARIO] Network hijacking' },
+                    { type: 'attacker', text: "[ATTACKER] Fake ARP replies" },
+                    { type: 'victim', text: "[VICTIM] Cache poisoned" },
+                    { type: 'compromised', text: "[COMPROMISED] Traffic redirected!" },
+                    { type: 'defense', text: "[DEFENSE] Prevention:" },
+                    { type: 'defense', text: " - Static ARP entries" },
+                    { type: 'defense', text: " - ARP inspection" }
+                ]
+            }
+        };
+
+        function runAttack(type) {
+            if (type === 'all') {
+                var types = ['sql', 'phishing', 'bruteforce', 'mitm', 'ddos', 'ransomware', 'xss', 'csrf', 'keylogger', 'arp'];
+                document.getElementById('simulationOutput').innerHTML = '';
+                for (var i = 0; i < types.length; i++) {
+                    (function(idx) {
+                        setTimeout(function() {
+                            showAttack(types[idx]);
+                        }, idx * 3500);
+                    })(i);
+                }
+            } else {
+                document.getElementById('simulationOutput').innerHTML = '';
+                showAttack(type);
+            }
+        }
+
+        function showAttack(type) {
+            var output = document.getElementById('simulationOutput');
+            var attack = attacks[type];
+            
+            var title = document.createElement('div');
+            title.className = 'log-line title';
+            title.textContent = '\n=== ' + attack.title + ' ===\n';
+            output.appendChild(title);
+            
+            showVisual(type);
+            
+            for (var i = 0; i < attack.steps.length; i++) {
+                (function(idx) {
+                    setTimeout(function() {
+                        var line = document.createElement('div');
+                        line.className = 'log-line ' + attack.steps[idx].type;
+                        line.textContent = attack.steps[idx].text;
+                        output.appendChild(line);
+                        output.scrollTop = output.scrollHeight;
+                    }, idx * 350);
+                })(i);
+            }
+        }
+
+        function showVisual(type) {
+            var vis = document.getElementById('visualArea');
+            vis.innerHTML = '';
+            
+            if (type === 'sql' || type === 'xss' || type === 'csrf') {
+                var attacker = makeNode('👨‍💻', 'attacker-node', 50, 150);
+                var server = makeNode('🖥️', 'server-node', 250, 150);
+                vis.appendChild(attacker);
+                vis.appendChild(server);
+            } else if (type === 'phishing') {
+                var victim = makeNode('👤', 'victim-node', 150, 180);
+                vis.appendChild(victim);
+            } else if (type === 'bruteforce') {
+                var lock = makeNode('🔒', 'server-node', 180, 150);
+                vis.appendChild(lock);
+            } else if (type === 'mitm' || type === 'arp') {
+                var v = makeNode('👤', 'victim-node', 50, 200);
+                var a = makeNode('👨‍💻', 'attacker-node', 180, 100);
+                var s = makeNode('🌐', 'server-node', 300, 200);
+                vis.appendChild(v);
+                vis.appendChild(a);
+                vis.appendChild(s);
+            } else if (type === 'ddos') {
+                var srv = makeNode('🖥️', 'server-node', 180, 180);
+                vis.appendChild(srv);
+                for (var i = 0; i < 4; i++) {
+                    var bot = makeNode('🤖', 'attacker-node', 30 + i * 100, 50);
+                    vis.appendChild(bot);
+                }
+            } else if (type === 'ransomware') {
+                var pc = makeNode('💻', 'victim-node', 120, 150);
+                var lck = makeNode('🔒', 'attacker-node', 220, 150);
+                vis.appendChild(pc);
+                vis.appendChild(lck);
+            } else if (type === 'keylogger') {
+                var kb = makeNode('⌨️', 'victim-node', 100, 180);
+                var hck = makeNode('👨‍💻', 'attacker-node', 250, 180);
+                vis.appendChild(kb);
+                vis.appendChild(hck);
+            }
+        }
+
+        function makeNode(emoji, cls, x, y) {
+            var n = document.createElement('div');
+            n.className = 'node ' + cls;
+            n.textContent = emoji;
+            n.style.left = x + 'px';
+            n.style.top = y + 'px';
+            return n;
+        }
+
+        function clearAll() {
+            document.getElementById('simulationOutput').innerHTML = '';
+            document.getElementById('visualArea').innerHTML = '';
+        }
+
+        function sendMsg() {
+            var input = document.getElementById('chatInput');
+            var msg = input.value.trim();
+            if (!msg) return;
+            input.value = '';
+            askBot(msg);
+        }
+
+        function askBot(question) {
+            var key = document.getElementById('apiKey').value.trim();
+            if (!key) {
+                addMsg('⚠️ Please enter your API key first!', 'error');
+                return;
+            }
+            
+            addMsg(question, 'user');
+            var loading = addMsg('Thinking...', 'bot');
+            
+            fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=' + key, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: 'As a cybersecurity expert, answer briefly: ' + question }] }]
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                loading.remove();
+                if (data.candidates && data.candidates[0]) {
+                    addMsg(data.candidates[0].content.parts[0].text, 'bot');
+                } else {
+                    addMsg('❌ No response', 'error');
+                }
+            })
+            .catch(function(err) {
+                loading.remove();
+                addMsg('❌ Error: ' + err.message, 'error');
+            });
+        }
+
+        function addMsg(text, type) {
+            var chat = document.getElementById('chatOutput');
+            var div = document.createElement('div');
+            div.className = 'chat-message ' + type + '-message';
+            var prefix = type === 'user' ? '👤 You' : type === 'error' ? '⚠️ System' : '🤖 Assistant';
+            div.innerHTML = '<strong>' + prefix + ':</strong><br>' + text;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+            return div;
+        }
+
+        window.onload = function() {
+            addMsg('Welcome! Click attacks to learn how they work! 🛡️', 'bot');
+        };
+    </script>
+</body>
+</html>
