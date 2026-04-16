@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Email Security Analyzer</title>
+
+    <style>
+        body {
+          margin: 0;
+          font-family: Arial, sans-serif;
+          background: #0a0a0a;
+          color: #ffffff;
+        }
+
+        .container {
+          max-width: 950px;
+          margin: 40px auto;
+          background: #121212;
+          border-radius: 16px;
+          padding: 25px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+
+        h1 {
+          text-align: center;
+          margin-bottom: 10px;
+        }
+
+        .subtitle {
+          text-align: center;
+          color: #9ca3af;
+          margin-bottom: 25px;
+          line-height: 1.5;
+        }
+
+        label {
+          font-weight: bold;
+          margin-top: 12px;
+          display: block;
+        }
+
+        input, select, textarea {
+          width: 100%;
+          padding: 10px;
+          margin-top: 5px;
+          border-radius: 10px;
+          border: 1px solid #333;
+          background: #1e1e1e;
+          color: white;
+        }
+
+        textarea {
+          min-height: 200px;
+          resize: vertical;
+        }
+
+        .row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+        }
+
+        button {
+          margin-top: 15px;
+          padding: 12px;
+          border: none;
+          border-radius: 10px;
+          cursor: pointer;
+          font-weight: bold;
+        }
+
+        .analyze {
+          background: #2563eb;
+          color: white;
+          width: 100%;
+        }
+
+        .clear {
+          background: #374151;
+          color: white;
+          width: 100%;
+        }
+
+        .result {
+          margin-top: 25px;
+          padding: 20px;
+          border-radius: 12px;
+          border: 1px solid #333;
+          background: #1a1a1a;
+        }
+
+        .risk {
+          font-weight: bold;
+          margin-bottom: 10px;
+        }
+
+        .risk-banner {
+          padding: 14px;
+          border-radius: 12px;
+          text-align: center;
+          font-weight: bold;
+          font-size: 1.2rem;
+          margin-bottom: 16px;
+        }
+
+        .high-banner { background: #7f1d1d; color: #fecaca; }
+        .medium-banner { background: #78350f; color: #fde68a; }
+        .low-banner { background: #14532d; color: #bbf7d0; }
+
+        .high { color: #ef4444; }
+        .medium { color: #f59e0b; }
+        .low { color: #22c55e; }
+
+        .card {
+          margin-top: 18px;
+          background: #111;
+          padding: 14px;
+          border-radius: 10px;
+          border: 1px solid #333;
+        }
+
+        .card h3 {
+          margin-top: 0;
+        }
+
+        .note {
+          color: #9ca3af;
+          font-size: 0.95rem;
+          line-height: 1.5;
+        }
+
+        ul {
+          margin: 8px 0 0 18px;
+        }
+
+        li {
+          margin-bottom: 6px;
+        }
+
+        pre {
+          white-space: pre-wrap;
+          word-wrap: break-word;
+          background: #111;
+          padding: 10px;
+          border-radius: 8px;
+          border: 1px solid #333;
+        }
+
+        @media (max-width: 700px) {
+          .row {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        /* Loading dots */
+        .loading {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+          padding: 12px 0;
+          color: #9ca3af;
+          font-size: 14px;
+        }
+
+        .dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #555;
+          animation: pulse 1.2s infinite;
+        }
+
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes pulse {
+          0%, 80%, 100% { opacity: 0.2; }
+          40% { opacity: 1; }
+        }
+
+        /* Parsed output styles */
+        .summary-text {
+          color: #d1d5db;
+          line-height: 1.6;
+          font-size: 14px;
+          margin: 0;
+        }
+
+        .flag-item {
+          display: flex;
+          gap: 10px;
+          padding: 6px 0;
+          border-bottom: 1px solid #222;
+          align-items: flex-start;
+        }
+
+        .flag-item:last-child { border-bottom: none; }
+
+        .flag-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          margin-top: 6px;
+          flex-shrink: 0;
+        }
+
+        .dot-high { background: #ef4444; }
+        .dot-medium { background: #f59e0b; }
+        .dot-low { background: #22c55e; }
+
+        .flag-text {
+          font-size: 14px;
+          color: #d1d5db;
+          line-height: 1.5;
+        }
+
+        .check-item {
+          display: flex;
+          gap: 10px;
+          padding: 5px 0;
+          align-items: flex-start;
+        }
+
+        .check-box {
+          width: 16px;
+          height: 16px;
+          border-radius: 3px;
+          border: 1px solid #555;
+          flex-shrink: 0;
+          margin-top: 2px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .check-text {
+          font-size: 14px;
+          color: #d1d5db;
+          line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>Email Security Analyzer</h1>
+    <p class="subtitle">Check if an email is phishing or safe.</p>
+
+    <label>Gemini API Key</label>
+    <input type="password" id="apiKey" placeholder="Enter API key">
+
+    <div class="row">
+        <div>
+            <label>Analysis Type</label>
+            <select id="type">
+                <option value="quick">Quick</option>
+                <option value="detailed">Detailed</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Do you recognize the sender?</label>
+            <select id="recognizedSender">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+                <option value="not sure">Not sure</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div>
+            <label>Have you received similar email before?</label>
+            <select id="seenBefore">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+                <option value="not sure">Not sure</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Does the email have an attachment?</label>
+            <select id="hasAttachment">
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+                <option value="not sure">Not sure</option>
+            </select>
+        </div>
+    </div>
+
+    <label>Sender Email Address</label>
+    <input type="text" id="sender" placeholder="example@gmail.com">
+
+    <label>Email Content</label>
+    <textarea id="email" placeholder="Paste email here..."></textarea>
+
+    <button class="analyze" onclick="analyze()">Analyze</button>
+    <button class="clear" onclick="clearText()">Clear</button>
+
+    <div id="loadingState" style="display:none;" class="loading">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <span>Analyzing email...</span>
+    </div>
+
+    <div class="card">
+        <h3>Important Safety Rules</h3>
+        <ul>
+            <li>Never share passwords, OTPs, bank details, or Social Security Number over email.</li>
+            <li>Do not send gift cards or money just because an email asks for it.</li>
+            <li>Even if the sender looks familiar, carefully check the full email address.</li>
+            <li>Modern phishing emails may have perfect grammar because attackers use AI tools.</li>
+            <li>This tool cannot directly inspect PDF, Word, or ZIP attachments, so attachments need extra caution.</li>
+        </ul>
+    </div>
+
+    <div class="result" id="result" style="display:none;">
+        <div id="riskBanner" class="risk-banner medium-banner">⚠️ MEDIUM RISK - CHECK CAREFULLY</div>
+        <h2 id="quickSummary">Risk Level: MEDIUM — Review below for details</h2>
+        <div class="risk" id="riskText"></div>
+
+        <div class="card">
+            <h3>Summary</h3>
+            <p class="summary-text" id="summaryText"></p>
+        </div>
+
+        <div class="card" id="flagsCard" style="display:none;">
+            <h3>Red Flags</h3>
+            <div id="flagsList"></div>
+        </div>
+
+        <div class="card" id="adviceCard" style="display:none;">
+            <h3>What To Do</h3>
+            <div id="adviceList"></div>
+        </div>
+
+        <div class="card">
+            <h3>Checklist</h3>
+            <div id="checklistItems"></div>
+        </div>
+
+        <div class="card">
+            <h3>Safety Note</h3>
+            <p class="note" id="finalNote">Even if marked LOW, always verify emails through official sources. A false negative is more dangerous than a false positive, so this tool is designed to be cautious when uncertain.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function buildPrompt(email, detailed, sender, recognizedSender, seenBefore, hasAttachment) {
+      const intro =
+        "You are a cybersecurity expert analyzing an email for phishing. " +
+        "Be cautious and try to reduce false negatives. If unsure, return MEDIUM instead of LOW.\n\n" +
+        "Use these user-provided details when customizing your advice:\n" +
+        "Sender Email: " + sender + "\n" +
+        "Recognized Sender: " + recognizedSender + "\n" +
+        "Seen Similar Email Before: " + seenBefore + "\n" +
+        "Has Attachment: " + hasAttachment + "\n\n" +
+        "Important reminders to use when relevant:\n" +
+        "- Carefully inspect the From address for lookalike tricks like 0 instead of O\n" +
+        "- Never send Social Security numbers, bank details, passwords, OTPs, or gift cards by email\n" +
+        "- Attachment-based phishing is possible even if the email text looks normal\n" +
+        "- Good grammar does not mean the email is safe\n\n";
+
+      if (detailed) {
+        return intro +
+          "Return EXACTLY in this format:\n" +
+          "RISK: HIGH or MEDIUM or LOW\n" +
+          "SUMMARY: one short explanation\n" +
+          "RED_FLAGS:\n" +
+          "- item 1\n" +
+          "- item 2\n" +
+          "USER_ADVICE:\n" +
+          "- customized step 1\n" +
+          "- customized step 2\n" +
+          "CHECKLIST:\n" +
+          "- customized checklist item 1\n" +
+          "- customized checklist item 2\n" +
+          "FINAL_NOTE: one short warning\n\n" +
+          "Email:\n" + email;
+      } else {
+        return intro +
+          "Return EXACTLY in this format:\n" +
+          "RISK: HIGH or MEDIUM or LOW\n" +
+          "SUMMARY: short explanation\n" +
+          "CHECKLIST:\n" +
+          "- customized checklist item 1\n" +
+          "- customized checklist item 2\n\n" +
+          "Email:\n" + email;
+      }
+    }
+
+    function extractRisk(text) {
+      let t = text.toUpperCase();
+      if (t.includes("RISK: HIGH")) return "HIGH";
+      if (t.includes("RISK: MEDIUM")) return "MEDIUM";
+      if (t.includes("RISK: LOW")) return "LOW";
+      return "MEDIUM";
+    }
+
+    function extractSection(text, key, nextKeys) {
+      const regex = new RegExp(key + ":[\\s\\S]*?(?=" + nextKeys.join("|") + "|$)", "i");
+      const match = text.match(regex);
+      if (!match) return "";
+      return match[0].replace(new RegExp("^" + key + ":\\s*", "i"), "").trim();
+    }
+
+    function parseBullets(text) {
+      return text.split("\n").map(l => l.trim()).filter(l => l.startsWith("-")).map(l => l.replace(/^-\s*/, "").trim()).filter(Boolean);
+    }
+
+    function renderFlags(items, risk) {
+      const cls = risk === "HIGH" ? "dot-high" : risk === "LOW" ? "dot-low" : "dot-medium";
+      return items.map(i =>
+        `<div class="flag-item"><div class="flag-dot ${cls}"></div><div class="flag-text">${i}</div></div>`
+      ).join("");
+    }
+
+    function renderChecklist(items) {
+      return items.map(i =>
+        `<div class="check-item"><div class="check-box"><svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 3.5,6.5 9,1" stroke="#9ca3af" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="check-text">${i}</div></div>`
+      ).join("");
+    }
+
+    function updateBanner(risk) {
+      const banner = document.getElementById("riskBanner");
+      banner.className = "risk-banner";
+
+      if (risk === "HIGH") {
+        banner.innerHTML = "🚨 HIGH RISK - STOP";
+        banner.classList.add("high-banner");
+      } else if (risk === "MEDIUM") {
+        banner.innerHTML = "⚠️ MEDIUM RISK - CHECK CAREFULLY";
+        banner.classList.add("medium-banner");
+      } else {
+        banner.innerHTML = "✅ LOW RISK";
+        banner.classList.add("low-banner");
+      }
+    }
+
+    async function analyze() {
+      let apiKey = document.getElementById("apiKey").value.trim();
+      let email = document.getElementById("email").value.trim();
+      let detailed = document.getElementById("type").value === "detailed";
+      let sender = document.getElementById("sender").value.trim();
+      let recognizedSender = document.getElementById("recognizedSender").value;
+      let seenBefore = document.getElementById("seenBefore").value;
+      let hasAttachment = document.getElementById("hasAttachment").value;
+
+      if (!apiKey) { alert("Please enter your API key."); return; }
+      if (!email) { alert("Please paste the email content."); return; }
+
+      document.getElementById("result").style.display = "none";
+      document.getElementById("loadingState").style.display = "flex";
+
+      let prompt = buildPrompt(email, detailed, sender, recognizedSender, seenBefore, hasAttachment);
+
+      try {
+        let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+
+        let data = await res.json();
+        let output = data.candidates?.[0]?.content?.parts?.[0]?.text || "Error: No response generated.";
+        let risk = extractRisk(output);
+
+        const summary = extractSection(output, "SUMMARY", ["RED_FLAGS", "USER_ADVICE", "CHECKLIST", "FINAL_NOTE"]);
+        const flags = parseBullets(extractSection(output, "RED_FLAGS", ["USER_ADVICE", "CHECKLIST", "FINAL_NOTE"]));
+        const advice = parseBullets(extractSection(output, "USER_ADVICE", ["CHECKLIST", "FINAL_NOTE"]));
+        const checklist = parseBullets(extractSection(output, "CHECKLIST", ["FINAL_NOTE"]));
+        const finalNote = extractSection(output, "FINAL_NOTE", []);
+
+        let riskText = document.getElementById("riskText");
+        riskText.className = "risk " + risk.toLowerCase();
+        riskText.innerText = "PHISHING RISK: " + risk;
+
+        updateBanner(risk);
+        document.getElementById("quickSummary").innerText = "Risk Level: " + risk + " — Review below for details";
+
+        document.getElementById("summaryText").textContent = summary || "No summary provided.";
+
+        if (flags.length > 0) {
+          document.getElementById("flagsList").innerHTML = renderFlags(flags, risk);
+          document.getElementById("flagsCard").style.display = "block";
+        } else {
+          document.getElementById("flagsCard").style.display = "none";
+        }
+
+        if (advice.length > 0) {
+          document.getElementById("adviceList").innerHTML = renderChecklist(advice);
+          document.getElementById("adviceCard").style.display = "block";
+        } else {
+          document.getElementById("adviceCard").style.display = "none";
+        }
+
+        document.getElementById("checklistItems").innerHTML = checklist.length > 0
+          ? renderChecklist(checklist)
+          : "<p class='note'>No checklist provided.</p>";
+
+        if (finalNote) document.getElementById("finalNote").textContent = finalNote;
+
+        document.getElementById("loadingState").style.display = "none";
+        document.getElementById("result").style.display = "block";
+
+      } catch (error) {
+        updateBanner("MEDIUM");
+        document.getElementById("quickSummary").innerText = "Risk Level: MEDIUM — Request error, review manually";
+        document.getElementById("riskText").className = "risk medium";
+        document.getElementById("riskText").innerText = "PHISHING RISK: MEDIUM";
+        document.getElementById("summaryText").textContent = "Error: " + error.message;
+        document.getElementById("flagsCard").style.display = "none";
+        document.getElementById("adviceCard").style.display = "none";
+        document.getElementById("checklistItems").innerHTML = renderChecklist([
+          "Double-check sender address manually",
+          "Do not click links until verified",
+          "Contact the company through the official website"
+        ]);
+        document.getElementById("loadingState").style.display = "none";
+        document.getElementById("result").style.display = "block";
+      }
+    }
+
+    function clearText() {
+      document.getElementById("sender").value = "";
+      document.getElementById("email").value = "";
+      document.getElementById("recognizedSender").value = "yes";
+      document.getElementById("seenBefore").value = "yes";
+      document.getElementById("hasAttachment").value = "no";
+      document.getElementById("result").style.display = "none";
+      document.getElementById("loadingState").style.display = "none";
+    }
+</script>
+
+</body>
+</html>
